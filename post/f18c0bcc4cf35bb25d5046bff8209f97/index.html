@@ -1,0 +1,39 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#202020"><meta http-equiv="x-ua-compatible" content="ie=edge"><title>使用XShell进行端口转发 - 嘀咕</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-webfont@1.7.0/style.min.css"><link rel="stylesheet" href="/css/forever.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css"><meta name="generator" content="Hexo 7.1.1"></head><body><div class="wrap flex fd-c fai-c my-4 gap-4"><header class="flex fd-r fai-c fjc-sb mt-4 mb-8 gap-8"><div class="logo mb-1"><a class="flex px-2" href="/"><div class="draw"><div class="ghost"><div class="body"><div class="face"><div class="eyes"><span></span><span></span></div><div class="mouth"></div></div><div class="hands"> </div></div><div class="feet"><span></span><span></span><span></span><span></span></div></div></div><span class="name flex fjc-c fai-c">嘀咕</span></a></div><ul class="flex m-0 p-0 ta-c gap-6"><li><a href="/">首页</a></li><li><a href="/says">碎语</a></li><li><a href="/archives">归档</a></li><li><a href="/friends">朋友</a></li><li><a href="/about">关于</a></li></ul></header><main><article><div class="header flex fd-c fai-c"><h1 class="my-0">使用XShell进行端口转发</h1><time datetime="2017-03-08T08:13:00.000Z">2017-03-08 16:13</time></div><div class="content mt-6"><p>公司最近因某单位牵头，需要和某迅、银行等企业多方合作开发，为了方便与安全，测试服务器都由某迅提供。</p>
+<p>因为我们要和银行进行接口联调，需要部署到某迅提供的服务器上才能测试。但是呢，某迅不愿意开放外网访问端口，但我们是web程序啊，不开放端口怎么请求访问啊。后来得知，可以用跳板机端口转发的方法进行访问。</p>
+<p>我们关联的有三台机器，一台台式工作机、一台跳板机、一台内网服务器。</p>
+<ul class="gallery gallery-1 gap-1"><li><a class="image" target="_blank" rel="noopener" href="https://digu-image-host.s3.bitiful.net/2017/03/c5e2d376482d581481a78de1ff146030.png!style:original" data-fancybox="gallery" data-caption="网络图"><img class="lazy br-1" data-original="https://digu-image-host.s3.bitiful.net/2017/03/c5e2d376482d581481a78de1ff146030.png!style:definition" src="https://digu-image-host.s3.bitiful.net/2017/03/c5e2d376482d581481a78de1ff146030.png!style:thumbnail" alt="网络图"></a></li></ul>
+
+<p>我的电脑是不能直接连到内网服务器的，需要通过跳板机才能链接。如果仅仅是部署程序放在服务器上，然后就不用管了还好，偏偏还需要从本机访问页面，才能进行测试工作。</p>
+<p>首先配置好XShell的链接。</p>
+<ul class="gallery gallery-1 gap-1"><li><a class="image" target="_blank" rel="noopener" href="https://digu-image-host.s3.bitiful.net/2017/03/53a3709f422a598bb24c696428b22d11.png!style:original" data-fancybox="gallery" data-caption="XShell"><img class="lazy br-1" data-original="https://digu-image-host.s3.bitiful.net/2017/03/53a3709f422a598bb24c696428b22d11.png!style:definition" src="https://digu-image-host.s3.bitiful.net/2017/03/53a3709f422a598bb24c696428b22d11.png!style:thumbnail" alt="XShell"></a></li></ul>
+
+<div class="code-block mb-6"><div class="header px-4 py-3" data-language="mermaid"><span></span><span></span><span></span></div><div class="body flex fd-r"><div class="line-numbers py-1 mx-3"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><pre class="language-mermaid m-0 mr-4 py-1" data-language="mermaid"><code class="language-mermaid p-0"><span class="token keyword">sequenceDiagram</span>
+<span class="token keyword">participant</span> bj as 本机（127.0.0.1）
+<span class="token keyword">participant</span> tbj as 跳板机（201.202.203.204）
+<span class="token keyword">participant</span> fwq as 内网服务器（192.168.1.168）
+bj <span class="token arrow operator">-x</span> fwq<span class="token operator">:</span> 与内网服务器不能通信
+fwq <span class="token arrow operator">-x</span> bj<span class="token operator">:</span> 与外网不能通信
+bj <span class="token arrow operator">->></span>tbj<span class="token operator">:</span> 连接到内网跳板机
+tbj <span class="token arrow operator">->></span>fwq<span class="token operator">:</span> 连接到内网服务器
+fwq <span class="token arrow operator">-->></span> tbj<span class="token operator">:</span> 响应给跳板机
+tbj <span class="token arrow operator">-->></span> bj<span class="token operator">:</span> 响应给本机</code></pre></div></div>
+
+<p>然后打开当前链接的<code>属性-&gt;SSH-&gt;隧道</code>，添加一个转发规则。</p>
+<ul class="gallery gallery-1 gap-1"><li><a class="image" target="_blank" rel="noopener" href="https://digu-image-host.s3.bitiful.net/2017/03/53a3709f422a598bb24c696428b22d11.png!style:original" data-fancybox="gallery" data-caption="XShell"><img class="lazy br-1" data-original="https://digu-image-host.s3.bitiful.net/2017/03/53a3709f422a598bb24c696428b22d11.png!style:definition" src="https://digu-image-host.s3.bitiful.net/2017/03/53a3709f422a598bb24c696428b22d11.png!style:thumbnail" alt="XShell"></a></li></ul>
+
+<p>配置内容说明：</p>
+<ul>
+<li>类型：默认</li>
+<li>源主机：默认或127.0.0.1</li>
+<li>侦听端口：任意不冲突的端口都可以，一般和目标端口保持，我这里因为本机8080需要使用，所以写的8099</li>
+<li>目标主机：内网服务器的内网IP</li>
+<li>目标端口：目标服务的端口，比如TOMCAT服务的默认端口8080</li>
+</ul>
+<p>保存后，关闭当前链接，再重新链接一次即可生效。然后本地浏览器访问<code>http://127.0.0.1:8099</code>的请求都会通过跳板机<code>210.210.210.210</code>转发至内网服务器<code>192.168.88.88</code>的<code>8080</code>端口。</p>
+<ul class="gallery gallery-1 gap-1"><li><a class="image" target="_blank" rel="noopener" href="https://digu-image-host.s3.bitiful.net/2017/03/4f6869650ba85c9b9f07ae55bbf246e0.png!style:original" data-fancybox="gallery" data-caption="转发请求结果"><img class="lazy br-1" data-original="https://digu-image-host.s3.bitiful.net/2017/03/4f6869650ba85c9b9f07ae55bbf246e0.png!style:definition" src="https://digu-image-host.s3.bitiful.net/2017/03/4f6869650ba85c9b9f07ae55bbf246e0.png!style:thumbnail" alt="转发请求结果"></a></li></ul>
+
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="http://jingyan.baidu.com/article/215817f7ef11a11eda142391.html">SecureCRT实现端口转发</a></li>
+<li><a target="_blank" rel="noopener" href="http://blog.csdn.net/a19881029/article/details/40081983">使用SecureCRT进行端口转发</a></li>
+</ul>
+</div></article><div class="end flex fai-c fjc-c mb-4"><span class="flex fai-c fjc-c my-4 o2">THE-END</span></div><div class="tags my-4"><ul class="flex fjc-c fd-r gap-4"><li><a class="py-1 px-4 flex fd-c fai-c" href="/tags/Java/"><span>Java<sup>2</sup></span></a></li><li><a class="py-1 px-4 flex fd-c fai-c" href="/tags/Linux/"><span>Linux<sup>1</sup></span></a></li><li><a class="py-1 px-4 flex fd-c fai-c" href="/tags/Xshell/"><span>Xshell<sup>1</sup></span></a></li></ul></div><div class="near flex fjc-sb mb-4"><div class="prev"><a href="/post/3777ba2d020bb19fda6af63359f28456/" ref="prev"><div class="text fw-b">PREVIOUS</div><div class="name">办理深圳移动8元保号套餐成功</div></a></div><div class="next"><a href="/post/272de32e12e373e024e321b466822736/" ref="next"><div class="text">NEXT</div><div class="name">写给你，我的小情人</div></a></div></div><div class="comments"><div class="comment-items"><h2 class="pl-2">评论列表</h2><div class="not-found flex fai-c fjc-c">「此时无声胜有声」</div></div></div></main><footer class="flex fjc-c"><div class="copyright"><p>© 2007 - 现在 <a href="">嘀咕</a></p></div></footer><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script><script type="text/javascript" src="/js/forever.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/jquery-lazyload@1.9.7/jquery.lazyload.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script></div></body></html>

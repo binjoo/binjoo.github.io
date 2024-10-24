@@ -1,0 +1,166 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#202020"><meta http-equiv="x-ua-compatible" content="ie=edge"><title>利用PN532读写器实现小米9复制加密门禁卡 - 嘀咕</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-screen-webfont@1.7.0/style.min.css"><link rel="stylesheet" href="/css/forever.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css"><meta name="generator" content="Hexo 7.1.1"></head><body><div class="wrap flex fd-c fai-c my-4 gap-4"><header class="flex fd-r fai-c fjc-sb mt-4 mb-8 gap-8"><div class="logo mb-1"><a class="flex px-2" href="/"><div class="draw"><div class="ghost"><div class="body"><div class="face"><div class="eyes"><span></span><span></span></div><div class="mouth"></div></div><div class="hands"> </div></div><div class="feet"><span></span><span></span><span></span><span></span></div></div></div><span class="name flex fjc-c fai-c">嘀咕</span></a></div><ul class="flex m-0 p-0 ta-c gap-6"><li><a href="/">首页</a></li><li><a href="/says">碎语</a></li><li><a href="/archives">归档</a></li><li><a href="/friends">朋友</a></li><li><a href="/about">关于</a></li></ul></header><main><article><div class="header flex fd-c fai-c"><h1 class="my-0">利用PN532读写器实现小米9复制加密门禁卡</h1><time datetime="2020-10-03T07:01:00.000Z">2020-10-03 15:01</time></div><div class="content mt-6"><p>现在的手机基本都是支持NFC功能，其实很早就想把小区门禁卡复制到手机里。之前买过两张空白CUID异型卡，以为直接复制刷进去就可以了。结果小区门禁卡是加密过的，需要额外的设备来处理。前段时间在并夕夕看到个比较便宜的，于是买了个便宜的，如果失败了也不会太心疼。</p>
+<h2 id="门禁卡种类"><a href="#门禁卡种类" class="headerlink" title="门禁卡种类"></a>门禁卡种类</h2><p>门禁卡种类一般为两种：ID卡和IC卡。而我们有时候会听说EM卡、M1卡、CPU卡等等，其实是它们的细分，本质上也是属于ID卡或IC卡，它们都是基于<a target="_blank" rel="noopener" href="https://baike.baidu.com/item/%E5%B0%84%E9%A2%91%E8%AF%86%E5%88%AB%E6%8A%80%E6%9C%AF/9524139">RFID</a>感应的原理来实现开门的。</p>
+<table>
+<thead>
+<tr>
+<th align="center"></th>
+<th align="center">工作频率</th>
+<th align="center">加密情况</th>
+<th align="center">市场占有率</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="center">ID卡</td>
+<td align="center">125KHz</td>
+<td align="center">非加密</td>
+<td align="center">主流</td>
+</tr>
+<tr>
+<td align="center">IC卡</td>
+<td align="center">13.56KHz</td>
+<td align="center">非加密</td>
+<td align="center">一般</td>
+</tr>
+<tr>
+<td align="center">IC卡</td>
+<td align="center">13.56KHz</td>
+<td align="center">半加密</td>
+<td align="center">主流</td>
+</tr>
+<tr>
+<td align="center">IC卡</td>
+<td align="center">13.56KHz</td>
+<td align="center">全加密</td>
+<td align="center">一般</td>
+</tr>
+<tr>
+<td align="center">IC卡</td>
+<td align="center">868KHz</td>
+<td align="center">全加密</td>
+<td align="center">少</td>
+</tr>
+</tbody></table>
+<p>你的是什么卡？可以通过下图来辨别。</p>
+<ul class="gallery gallery-1 gap-1"><li><a class="image" target="_blank" rel="noopener" href="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/d9636b41a00e4b89a93047c139c5295a.jpg!style:original" data-fancybox="gallery"><img class="lazy br-1" data-original="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/d9636b41a00e4b89a93047c139c5295a.jpg!style:definition" src="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/d9636b41a00e4b89a93047c139c5295a.jpg!style:thumbnail" alt=""></a></li></ul>
+
+<h2 id="读写器选择"><a href="#读写器选择" class="headerlink" title="读写器选择"></a>读写器选择</h2><p>网上常见的读写器一般为下面三种，根据价格来说应该是越贵的越给力，毕竟一分钱一分货。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th align="center">一体式PN532</th>
+<th align="center">PM3</th>
+<th align="center">ACR12U</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>M1半加密</strong></td>
+<td align="center">成功率90%</td>
+<td align="center">成功率95%</td>
+<td align="center">成功率90%</td>
+</tr>
+<tr>
+<td><strong>M1全加密</strong></td>
+<td align="center">成功率40%</td>
+<td align="center">成功率95%</td>
+<td align="center">不支持</td>
+</tr>
+<tr>
+<td><strong>嗅探</strong></td>
+<td align="center">不支持</td>
+<td align="center"><strong>支持</strong></td>
+<td align="center">不支持</td>
+</tr>
+<tr>
+<td><strong>UID卡</strong></td>
+<td align="center"><strong>支持</strong></td>
+<td align="center"><strong>支持</strong></td>
+<td align="center"><strong>支持</strong></td>
+</tr>
+<tr>
+<td><strong>CUID卡</strong></td>
+<td align="center"><strong>支持</strong></td>
+<td align="center"><strong>支持</strong></td>
+<td align="center"><strong>支持</strong></td>
+</tr>
+<tr>
+<td><strong>FUID卡</strong></td>
+<td align="center"><strong>支持</strong></td>
+<td align="center"><strong>支持</strong></td>
+<td align="center"><strong>支持</strong></td>
+</tr>
+<tr>
+<td><strong>UFUID卡</strong></td>
+<td align="center"><strong>支持</strong></td>
+<td align="center"><strong>支持</strong></td>
+<td align="center"><strong>支持</strong></td>
+</tr>
+<tr>
+<td><strong>低频ID</strong></td>
+<td align="center">不支持</td>
+<td align="center"><strong>支持</strong></td>
+<td align="center">不支持</td>
+</tr>
+<tr>
+<td><strong>低频HID</strong></td>
+<td align="center">不支持</td>
+<td align="center"><strong>支持</strong></td>
+<td align="center">不支持</td>
+</tr>
+<tr>
+<td><strong>T5577</strong></td>
+<td align="center">不支持</td>
+<td align="center"><strong>支持</strong></td>
+<td align="center">不支持</td>
+</tr>
+<tr>
+<td><strong>特点</strong></td>
+<td align="center">读写速度快</td>
+<td align="center">支持卡类多</td>
+<td align="center">读写速度快</td>
+</tr>
+<tr>
+<td><strong>价格</strong></td>
+<td align="center">50元±</td>
+<td align="center">300元±</td>
+<td align="center">150元±</td>
+</tr>
+</tbody></table>
+<p>小区的门禁卡是IC卡，PN532可以满足需求。PN532除了一体式的还有那种裸板的，就是没有外壳，里面的板子裸露在外面的，容易损坏。大概30块钱可以拿下，我是在并夕夕买的，28块钱，挺香的。</p>
+<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><h3 id="硬件"><a href="#硬件" class="headerlink" title="硬件"></a>硬件</h3><ul>
+<li>PN532读写器</li>
+<li>手机（本文以MI 9为例）</li>
+</ul>
+<h3 id="软件"><a href="#软件" class="headerlink" title="软件"></a>软件</h3><ul>
+<li>PN532驱动</li>
+<li>MifareOneTool</li>
+<li>M1卡分析助手</li>
+<li>NFC上位机软件</li>
+</ul>
+<p>因买的PN532不同，驱动肯定也不同，请联系商家索要驱动。</p>
+<p>下载地址：<a target="_blank" rel="noopener" href="https://app.box.com/s/3e8v9td5dkrpisna52vcbdxl6cyhjjit">BoxCN</a>、<a target="_blank" rel="noopener" href="https://cowtransfer.com/s/0f53d1f84a2241">奶牛快传</a></p>
+<h2 id="操作步骤"><a href="#操作步骤" class="headerlink" title="操作步骤"></a>操作步骤</h2><p>首先安装PN532驱动，将PN532连接至电脑。</p>
+<h3 id="读取加密数据"><a href="#读取加密数据" class="headerlink" title="读取加密数据"></a>读取加密数据</h3><p>打开<code>MifareOneTool</code>，把原门禁卡放在PN532上，依次点击<code>检测连接</code>、<code>扫描卡片</code>、<code>检测加密</code>、<code>一键解原卡</code>。原卡解密结束后，会自动弹出保存dump文件的窗口，我们命名为<code>原卡加密.dump</code>保存。当然，名称随便，自己记住就行了。</p>
+<ul class="gallery gallery-3 gap-1"><li><a class="image" target="_blank" rel="noopener" href="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/19f268b6d9f44b52af07834799846062.png!style:original" data-fancybox="gallery" data-caption="检测连接"><img class="lazy br-1" data-original="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/19f268b6d9f44b52af07834799846062.png!style:definition" src="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/19f268b6d9f44b52af07834799846062.png!style:thumbnail" alt="检测连接"></a></li><li><a class="image" target="_blank" rel="noopener" href="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/b65842d51a0240bfa8b886409e55bcb6.png!style:original" data-fancybox="gallery" data-caption="扫描卡片"><img class="lazy br-1" data-original="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/b65842d51a0240bfa8b886409e55bcb6.png!style:definition" src="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/b65842d51a0240bfa8b886409e55bcb6.png!style:thumbnail" alt="扫描卡片"></a></li><li><a class="image" target="_blank" rel="noopener" href="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/8dce81173b6848a1a237794148bdc589.png!style:original" data-fancybox="gallery" data-caption="检测加密"><img class="lazy br-1" data-original="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/8dce81173b6848a1a237794148bdc589.png!style:definition" src="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/8dce81173b6848a1a237794148bdc589.png!style:thumbnail" alt="检测加密"></a></li></ul>
+
+<p>检测加密的结果中我们可以看到加密信息在扇区11至扇区15，记住这个位置，待会要用到。</p>
+<ul class="gallery gallery-1 gap-1"><li><a class="image" target="_blank" rel="noopener" href="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/4738af26d2404162a7bec119aacc3aa1.png!style:original" data-fancybox="gallery" data-caption="一键解原卡"><img class="lazy br-1" data-original="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/4738af26d2404162a7bec119aacc3aa1.png!style:definition" src="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/4738af26d2404162a7bec119aacc3aa1.png!style:thumbnail" alt="一键解原卡"></a></li></ul>
+
+<h3 id="修改加密数据"><a href="#修改加密数据" class="headerlink" title="修改加密数据"></a>修改加密数据</h3><p>打开<code>IC客栈-M1卡分析助手</code>，将<code>原卡加密.dump</code>拖拽至软件界面后，可以读取到加密信息。然后选择<code>文件</code>-&gt;<code>导出为TXT格式</code>，命名为<code>原卡密文.txt</code>，保存。</p>
+<ul class="gallery gallery-1 gap-1"><li><a class="image" target="_blank" rel="noopener" href="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/1dd2d61300784af8b99eff6f858cdd6e.png!style:original" data-fancybox="gallery" data-caption="导出TXT"><img class="lazy br-1" data-original="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/1dd2d61300784af8b99eff6f858cdd6e.png!style:definition" src="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/1dd2d61300784af8b99eff6f858cdd6e.png!style:thumbnail" alt="导出TXT"></a></li></ul>
+
+<p>使用文本编辑器（Notepad、VSCode等）打开<code>原卡密文.txt</code>，刚刚在检测加密的时候，我们的加密信息在扇区11扇区15的位置，将这些位置的3区块信息都改为FF。更简单的办法，就是将其他任意扇区的3区块内容复制到加密信息扇区，保存。</p>
+<ul class="gallery gallery-1 gap-1"><li><a class="image" target="_blank" rel="noopener" href="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/e897547aa30c4105960d4663e076c371.png!style:original" data-fancybox="gallery" data-caption="修改加密信息"><img class="lazy br-1" data-original="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/e897547aa30c4105960d4663e076c371.png!style:definition" src="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/e897547aa30c4105960d4663e076c371.png!style:thumbnail" alt="修改加密信息"></a></li></ul>
+
+<p>再用<code>IC客栈-M1卡分析助手</code>打开修改后的<code>原文密文.txt</code>，选择<code>文件</code>-&gt;<code>导出为DUMP格式</code>，命名为<code>解密信息.dump</code>，保存。</p>
+<h3 id="写入空白卡"><a href="#写入空白卡" class="headerlink" title="写入空白卡"></a>写入空白卡</h3><p>拿出手机，打开<code>小米钱包</code>-&gt;<code>小米门卡</code>-&gt;<code>右下角+号</code>-&gt;<code>自定义空白卡</code>，等待创建成功。</p>
+<ul class="gallery gallery-1 gap-1"><li><a class="image" target="_blank" rel="noopener" href="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/2aae51dc47fa4672bef0524a9950ba6f.jpg!style:original" data-fancybox="gallery" data-caption="空白卡"><img class="lazy br-1" data-original="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/2aae51dc47fa4672bef0524a9950ba6f.jpg!style:definition" src="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/2aae51dc47fa4672bef0524a9950ba6f.jpg!style:thumbnail" alt="空白卡"></a></li></ul>
+
+<p>然后双击手机开机键，选择刚刚创建成功的空白卡，放在PN532上，打开<code>NFC上位机</code>，点击<code>读整卡：读取卡片内容</code>，再点击<code>写整卡：写普通M1卡</code>，选择<code>解密信息.dump</code>，等待完成。</p>
+<ul class="gallery gallery-1 gap-1"><li><a class="image" target="_blank" rel="noopener" href="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/9af9377299024736a6cb557238c087c3.png!style:original" data-fancybox="gallery" data-caption="写入数据"><img class="lazy br-1" data-original="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/9af9377299024736a6cb557238c087c3.png!style:definition" src="https://digu-image-host.s3.bitiful.net/2020/10/3448ba86ad914fa49a63b2f74cabf2ea/9af9377299024736a6cb557238c087c3.png!style:thumbnail" alt="写入数据"></a></li></ul>
+
+<p>再重新操作一次，点击<code>读整卡：读取卡片内容</code>，再点击<code>写整卡：写普通M1卡</code>，这个时候选择<code>原卡加密.dump</code>。</p>
+<p>成功！！！</p>
+<h2 id="简化步骤"><a href="#简化步骤" class="headerlink" title="简化步骤"></a>简化步骤</h2><p>后来测试一下，其实读取完<code>原卡加密.dump</code>后，就可以直接用手机创建空白卡，然后用<code>NFC上位机</code>选择<code>原卡加密.dump</code>写入进去，这样节省了修改加密数据这一步。</p>
+<h2 id="题外话"><a href="#题外话" class="headerlink" title="题外话"></a>题外话</h2><p>理论上只要是支持NFC的设备都可以这样操作来复制内容，大家可以试试其他的，比如NFC手环。</p>
+</div></article><div class="end flex fai-c fjc-c mb-4"><span class="flex fai-c fjc-c my-4 o2">THE-END</span></div><div class="tags my-4"><ul class="flex fjc-c fd-r gap-4"><li><a class="py-1 px-4 flex fd-c fai-c" href="/tags/%E6%8A%98%E8%85%BE/"><span>折腾<sup>14</sup></span></a></li><li><a class="py-1 px-4 flex fd-c fai-c" href="/tags/NFC/"><span>NFC<sup>1</sup></span></a></li></ul></div><div class="near flex fjc-sb mb-4"><div class="prev"><a href="/post/f6e896d9343049ccbda71fd04ca48957/" ref="prev"><div class="text fw-b">PREVIOUS</div><div class="name">木兰草原露营</div></a></div><div class="next"><a href="/post/5a824450f41d492186ba9b90eceb35c5/" ref="next"><div class="text">NEXT</div><div class="name">一路向西：D25.松多-拉萨</div></a></div></div><div class="comments"><div class="comment-items"><h2 class="pl-2">评论列表</h2><div class="not-found flex fai-c fjc-c">「此时无声胜有声」</div></div></div></main><footer class="flex fjc-c"><div class="copyright"><p>© 2007 - 现在 <a href="">嘀咕</a></p></div></footer><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script><script type="text/javascript" src="/js/forever.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/jquery-lazyload@1.9.7/jquery.lazyload.min.js"></script><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script></div></body></html>
